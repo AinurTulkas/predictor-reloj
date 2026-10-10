@@ -1,0 +1,29 @@
+name: Reloj
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+    - cron: "0 6 1 * *" # una vez al mes: commit vacio para que GitHub no apague el reloj (60 dias sin actividad)
+  workflow_dispatch:
+concurrency: reloj
+permissions:
+  contents: write
+jobs:
+  tic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Revisar apuestas
+        # Solo imprime el codigo HTTP: los registros de un repo publico son publicos
+        run: |
+          curl -fsS -m 90 -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $NOTIFY_SECRET" "$SITE_URL/api/notify"
+        env:
+          NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+      - name: Mantener vivo el reloj
+        if: github.event.schedule == '0 6 1 * *'
+        run: |
+          git clone -q --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" r && cd r
+          git -c user.name=reloj -c user.email=reloj@users.noreply.github.com commit -q --allow-empty -m "Reloj sigue vivo"
+          git push -q
+        env:
+          GH_TOKEN: ${{ github.token }}
