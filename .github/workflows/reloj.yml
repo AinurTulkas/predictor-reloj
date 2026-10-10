@@ -27,3 +27,11 @@ jobs:
           git push -q
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Avisar a Phrourós si fallo
+        if: failure()
+        run: |
+          curl -sS -m 10 -o /dev/null -X POST "https://panel3r2ores.atiktechmx.com/api/errors" \
+            -H "Content-Type: application/json" -H "x-api-key: $PHROUROS_API_KEY" \
+            -d "{\"level\":\"ERROR\",\"message\":\"El reloj no pudo revisar las apuestas\",\"context\":{\"run\":\"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID\"}}"
+        env:
+          PHROUROS_API_KEY: ${{ secrets.PHROUROS_API_KEY }}
